@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voucher Designer with QR Code</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { margin: 0; padding: 20px; background-color: #f0f4f8; font-family: 'Oswald', Arial, sans-serif; color: #000000; font-weight: 500; min-height: 100vh; }
+        
+        .page-container { width: 100%; max-width: 1400px; margin: 0 auto; }
+        
+        .page-header { background-color: #004080; color: #ffffff; padding: 25px 30px; text-align: center; margin-bottom: 15px; border-radius: 8px 8px 0 0; }
+        .logo-row { display: flex; justify-content: center; align-items: center; gap: 30px; margin-bottom: 15px; }
+        .logo-box { background: #ffffff; border-radius: 8px; padding: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 24px; color: #004080; width: 80px; height: 80px; }
+        .page-header h3 { margin: 12px 0 5px; font-size: 14px; font-weight: 700; letter-spacing: 1px; }
+        .page-header .tagline { margin: 0; font-size: 10px; font-weight: 500; }
+        .page-header h1 { margin: 20px 0 10px; font-size: 28px; font-weight: 700; letter-spacing: 1px; }
+        .page-header .subtitle { font-size: 14px; font-weight: 500; }
+        
+        .content-card { border: 4px double #004080; border-radius: 12px; padding: 12px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); margin-bottom: 15px; }
+        .content-inner { padding: 25px; }
+        
+        .main-layout { display: grid; grid-template-columns: 380px 1fr; gap: 30px; }
+        
+        .section-header { background-color: #004080; color: #ffffff; padding: 12px 16px; margin-bottom: 15px; border-radius: 6px; display: flex; align-items: center; gap: 12px; }
+        .section-icon { background: #ffffff; color: #004080; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+        .section-title { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; }
+        
+        .form-group { margin-bottom: 12px; }
+        .form-label { display: block; color: #004080; font-size: 11px; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 8px 10px; border: 2px solid #004080; border-radius: 6px; font-size: 12px; font-family: 'Oswald', Arial, sans-serif; font-weight: 500; color: #000; background: #ffffff; }
+        .form-textarea { min-height: 50px; resize: vertical; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: #0056b3; box-shadow: 0 0 0 3px rgba(0, 64, 128, 0.1); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        .color-row { display: flex; gap: 10px; align-items: center; }
+        .color-picker { width: 36px; height: 32px; padding: 0; border: 2px solid #004080; border-radius: 6px; cursor: pointer; }
+        
+        .btn-primary { padding: 10px 16px; background: #004080; color: #ffffff; border: 2px solid #004080; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-family: 'Oswald', Arial, sans-serif; transition: all 0.3s; width: 100%; }
+        .btn-primary:hover { background: #0056b3; border-color: #0056b3; }
+        
+        .btn-gold { padding: 12px 20px; background: #ffc107; color: #000000; border: 2px solid #ffc107; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-family: 'Oswald', Arial, sans-serif; transition: all 0.3s; }
+        .btn-gold:hover { background: #e0a800; border-color: #e0a800; }
+        
+        .btn-secondary { padding: 10px 16px; background: #ffffff; color: #004080; border: 2px solid #004080; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-family: 'Oswald', Arial, sans-serif; transition: all 0.3s; }
+        .btn-secondary:hover { background: #004080; color: #ffffff; }
+        
+        .btn-success { padding: 12px 20px; background: #28a745; color: #ffffff; border: 2px solid #28a745; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-family: 'Oswald', Arial, sans-serif; transition: all 0.3s; }
+        .btn-success:hover { background: #218838; border-color: #218838; }
+        
+        .btn-danger { padding: 10px 16px; background: #dc3545; color: #ffffff; border: 2px solid #dc3545; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; font-family: 'Oswald', Arial, sans-serif; transition: all 0.3s; }
+        .btn-danger:hover { background: #c82333; border-color: #c82333; }
+        
+        /* Upload Zone */
+        .upload-zone { border: 2px dashed #004080; border-radius: 8px; padding: 20px; text-align: center; background: #f8f9fa; cursor: pointer; transition: all 0.3s; margin-bottom: 15px; }
+        .upload-zone:hover { background: #e7f3ff; border-color: #0056b3; }
+        .upload-zone.dragover { background: #cce5ff; border-color: #004080; }
+        .upload-zone-icon { font-size: 32px; margin-bottom: 10px; }
+        .upload-zone-text { font-size: 12px; color: #666; }
+        .upload-zone-text strong { color: #004080; }
+        
+        /* Data Preview */
+        .data-preview { max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; margin-top: 10px; }
+        .data-preview table { width: 100%; border-collapse: collapse; font-size: 10px; }
+        .data-preview th, .data-preview td { padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
+        .data-preview th { background: #004080; color: white; position: sticky; top: 0; }
+        .data-preview tr:hover { background: #f5f5f5; }
+        
+        .data-count { background: #e7f3ff; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 12px; color: #004080; }
+        
+        /* Preview Section */
+        .preview-section { background: #f8f9fa; border: 2px solid #004080; border-radius: 8px; padding: 20px; position: sticky; top: 20px; }
+        .preview-title { font-size: 14px; font-weight: 700; color: #004080; margin-bottom: 15px; text-transform: uppercase; text-align: center; }
+        
+        .voucher-wrapper { display: flex; justify-content: center; padding: 20px; background: repeating-linear-gradient(45deg, #e9ecef, #e9ecef 10px, #f8f9fa 10px, #f8f9fa 20px); border-radius: 8px; overflow: auto; }
+        
+        /* Base Voucher - Sized for 2 columns x 5 rows on A4 */
+        .voucher {
+            width: 280px;
+            height: 160px;
+            position: relative;
+            font-family: 'Oswald', Arial, sans-serif;
+            display: grid;
+            grid-template-columns: 1fr 80px;
+            overflow: hidden;
+        }
+        
+        .voucher-main {
+            padding: 12px 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .voucher-logo {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            padding: 2px;
+            margin-bottom: 4px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .voucher-logo img { width: 100%; height: 100%; object-fit: contain; }
+        
+        .voucher-company { font-size: 7px; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 1px; }
+        .voucher-title { font-size: 12px; font-weight: 700; line-height: 1.1; margin-bottom: 2px; }
+        .voucher-value { font-size: 20px; font-weight: 700; line-height: 1; margin-bottom: 2px; }
+        .voucher-description { font-size: 7px; margin-bottom: 2px; }
+        .voucher-footer { font-size: 6px; margin-top: auto; display: flex; justify-content: space-between; gap: 5px; }
+        
+        .voucher-qr-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+        .qr-box { padding: 3px; border-radius: 3px; background: white; }
+        .qr-code-container { width: 55px; height: 55px; }
+        .qr-code-container img, .qr-code-container canvas { width: 55px !important; height: 55px !important; }
+        .qr-label { font-size: 5px; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .voucher-code { font-size: 6px; font-weight: 700; margin-top: 2px; }
+        
+        /* Template Styles */
+        .voucher.template-classic {
+            background: linear-gradient(135deg, var(--primary-color) 0%, color-mix(in srgb, var(--primary-color) 60%, var(--secondary-color)) 100%);
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        }
+        .voucher.template-classic .voucher-main { color: white; }
+        .voucher.template-classic .voucher-logo { background: white; }
+        .voucher.template-classic .voucher-footer { opacity: 0.85; }
+        .voucher.template-classic .voucher-qr-section { background: white; border-left: 2px dashed rgba(255,255,255,0.4); border-radius: 0 10px 10px 0; }
+        .voucher.template-classic .qr-label { color: #333; }
+        .voucher.template-classic .voucher-code { color: var(--primary-color); }
+        
+        .voucher.template-modern {
+            background: white;
+            border: 2px solid var(--primary-color);
+            border-radius: 10px;
+            grid-template-columns: 80px 1fr;
+        }
+        .voucher.template-modern .voucher-qr-section { background: var(--primary-color); order: -1; border-radius: 8px 0 0 8px; }
+        .voucher.template-modern .voucher-main { color: #333; }
+        .voucher.template-modern .voucher-title { color: var(--primary-color); }
+        .voucher.template-modern .voucher-value { color: var(--primary-color); }
+        .voucher.template-modern .voucher-logo { border: 1px solid var(--primary-color); }
+        .voucher.template-modern .voucher-footer { color: #999; border-top: 1px dashed #eee; padding-top: 4px; }
+        .voucher.template-modern .qr-label { color: white; }
+        .voucher.template-modern .voucher-code { color: rgba(255,255,255,0.9); }
+        
+        .voucher.template-elegant {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 10px;
+        }
+        .voucher.template-elegant .voucher-main { color: white; }
+        .voucher.template-elegant .voucher-logo { background: white; }
+        .voucher.template-elegant .voucher-company { opacity: 0.7; }
+        .voucher.template-elegant .voucher-title { color: var(--primary-color); }
+        .voucher.template-elegant .voucher-value { background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .voucher.template-elegant .voucher-footer { opacity: 0.6; }
+        .voucher.template-elegant .voucher-qr-section { background: rgba(255,255,255,0.08); border-left: 1px solid rgba(255,255,255,0.1); }
+        .voucher.template-elegant .qr-label { color: rgba(255,255,255,0.6); }
+        .voucher.template-elegant .voucher-code { color: var(--primary-color); }
+        
+        .voucher.template-festive {
+            background: white;
+            border-radius: 8px;
+            border: 4px solid transparent;
+            border-image: repeating-linear-gradient(90deg, var(--primary-color), var(--primary-color) 10px, var(--secondary-color) 10px, var(--secondary-color) 20px) 4;
+        }
+        .voucher.template-festive .voucher-main { color: #333; text-align: center; align-items: center; }
+        .voucher.template-festive .voucher-logo { background: #f8f9fa; border: 2px solid var(--primary-color); border-radius: 50%; }
+        .voucher.template-festive .voucher-logo img { border-radius: 50%; }
+        .voucher.template-festive .voucher-title { color: var(--primary-color); }
+        .voucher.template-festive .voucher-value { color: var(--secondary-color); }
+        .voucher.template-festive .voucher-footer { color: #999; justify-content: center; }
+        .voucher.template-festive .voucher-qr-section { background: #f8f9fa; border-left: 2px dashed #ddd; }
+        .voucher.template-festive .qr-label { color: #666; }
+        .voucher.template-festive .voucher-code { color: var(--primary-color); }
+        
+        .voucher.template-minimal {
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        .voucher.template-minimal .voucher-main { color: #333; }
+        .voucher.template-minimal .voucher-title { font-size: 8px; font-weight: 500; color: #999; letter-spacing: 1px; }
+        .voucher.template-minimal .voucher-value { font-size: 24px; color: var(--primary-color); }
+        .voucher.template-minimal .voucher-footer { color: #bbb; }
+        .voucher.template-minimal .voucher-qr-section { border-left: 1px solid #e0e0e0; }
+        .voucher.template-minimal .qr-label { color: #999; }
+        .voucher.template-minimal .voucher-code { color: var(--primary-color); }
+        
+        .voucher.template-luxury {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border: 1px solid #d4af37;
+            border-radius: 3px;
+        }
+        .voucher.template-luxury .voucher-main { color: white; }
+        .voucher.template-luxury .voucher-logo { border: 1px solid #d4af37; background: transparent; }
+        .voucher.template-luxury .voucher-company { color: #d4af37; letter-spacing: 1px; }
+        .voucher.template-luxury .voucher-title { color: #d4af37; font-weight: 400; letter-spacing: 0.5px; }
+        .voucher.template-luxury .voucher-value { color: #d4af37; }
+        .voucher.template-luxury .voucher-description { color: #aaa; }
+        .voucher.template-luxury .voucher-footer { color: #666; }
+        .voucher.template-luxury .voucher-qr-section { border-left: 1px solid rgba(212,175,55,0.3); }
+        .voucher.template-luxury .qr-label { color: #d4af37; }
+        .voucher.template-luxury .voucher-code { color: #d4af37; }
+        
+        .voucher.template-gradient {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 50%, var(--secondary-color) 100%);
+            border-radius: 12px;
+        }
+        .voucher.template-gradient .voucher-main { color: white; }
+        .voucher.template-gradient .voucher-logo { background: white; border-radius: 6px; }
+        .voucher.template-gradient .voucher-value { text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
+        .voucher.template-gradient .voucher-footer { opacity: 0.85; }
+        .voucher.template-gradient .voucher-qr-section { background: rgba(255,255,255,0.95); border-radius: 0 12px 12px 0; }
+        .voucher.template-gradient .qr-label { color: var(--primary-color); }
+        .voucher.template-gradient .voucher-code { color: var(--primary-color); }
+        
+        .voucher.template-retro {
+            background: #f4e4bc;
+            border: 2px solid #8b4513;
+            border-radius: 0;
+        }
+        .voucher.template-retro .voucher-main { color: #5c4033; }
+        .voucher.template-retro .voucher-logo { border: 2px solid #8b4513; border-radius: 50%; background: #fffaf0; }
+        .voucher.template-retro .voucher-logo img { border-radius: 50%; }
+        .voucher.template-retro .voucher-company { color: #8b4513; }
+        .voucher.template-retro .voucher-title { color: #8b4513; font-style: italic; }
+        .voucher.template-retro .voucher-value { color: #c41e3a; }
+        .voucher.template-retro .voucher-footer { color: #8b4513; border-top: 1px dashed #8b4513; padding-top: 4px; }
+        .voucher.template-retro .voucher-qr-section { background: #fffaf0; border-left: 2px dashed #8b4513; }
+        .voucher.template-retro .qr-box { border: 1px solid #8b4513; border-radius: 0; }
+        .voucher.template-retro .qr-label { color: #8b4513; }
+        .voucher.template-retro .voucher-code { color: #c41e3a; }
+        
+        .voucher.template-corporate {
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            grid-template-rows: auto 1fr;
+            grid-template-columns: 1fr 80px;
+        }
+        .voucher.template-corporate .voucher-header-bar {
+            grid-column: 1 / -1;
+            background: var(--primary-color);
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .voucher.template-corporate .voucher-header-bar .voucher-logo { margin: 0; width: 24px; height: 24px; background: white; }
+        .voucher.template-corporate .voucher-header-bar .voucher-company { color: white; font-size: 10px; font-weight: 700; margin: 0; }
+        .voucher.template-corporate .voucher-main { color: #333; padding-top: 8px; }
+        .voucher.template-corporate .voucher-title { color: #333; font-size: 9px; letter-spacing: 0.5px; }
+        .voucher.template-corporate .voucher-value { color: var(--primary-color); }
+        .voucher.template-corporate .voucher-footer { color: #999; border-top: 1px solid #eee; padding-top: 4px; }
+        .voucher.template-corporate .voucher-qr-section { background: #f5f5f5; }
+        .voucher.template-corporate .qr-box { box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+        .voucher.template-corporate .qr-label { color: #666; }
+        .voucher.template-corporate .voucher-code { color: var(--primary-color); }
+        
+        .voucher.template-neon {
+            background: #0d0d0d;
+            border-radius: 10px;
+            border: 1px solid var(--primary-color);
+            box-shadow: 0 0 10px color-mix(in srgb, var(--primary-color) 50%, transparent), inset 0 0 10px color-mix(in srgb, var(--primary-color) 20%, transparent);
+        }
+        .voucher.template-neon .voucher-main { color: #888; }
+        .voucher.template-neon .voucher-logo { background: white; box-shadow: 0 0 8px var(--primary-color); }
+        .voucher.template-neon .voucher-title { color: var(--primary-color); text-shadow: 0 0 5px var(--primary-color); text-transform: uppercase; letter-spacing: 1px; }
+        .voucher.template-neon .voucher-value { color: var(--secondary-color); text-shadow: 0 0 10px var(--secondary-color), 0 0 20px var(--secondary-color); }
+        .voucher.template-neon .voucher-footer { color: #555; }
+        .voucher.template-neon .voucher-qr-section { border-left: 1px solid rgba(255,255,255,0.1); }
+        .voucher.template-neon .qr-box { box-shadow: 0 0 8px var(--primary-color); }
+        .voucher.template-neon .qr-label { color: var(--primary-color); text-shadow: 0 0 3px var(--primary-color); }
+        .voucher.template-neon .voucher-code { color: var(--secondary-color); text-shadow: 0 0 3px var(--secondary-color); }
+        
+        .template-selector { display: flex; gap: 6px; flex-wrap: wrap; }
+        .template-btn { padding: 6px 10px; border: 2px solid #004080; background: white; color: #004080; border-radius: 6px; font-family: 'Oswald', Arial, sans-serif; font-size: 10px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .template-btn:hover { background: #e7f3ff; }
+        .template-btn.active { background: #004080; color: white; }
+        
+        .download-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+        
+        .notification { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; border-radius: 8px; font-weight: 600; z-index: 2000; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .notification.success { background: #d4edda; color: #155724; border: 2px solid #28a745; display: block; }
+        .notification.error { background: #f8d7da; color: #721c24; border: 2px solid #dc3545; display: block; }
+        
+        .page-footer { background-color: #004080; color: #ffffff; padding: 20px 30px; text-align: center; font-size: 13px; line-height: 1.7; font-weight: 500; border-radius: 0 0 8px 8px; }
+        .page-footer p { margin: 6px 0 0; font-size: 12px; }
+        
+        .tabs { display: flex; gap: 0; margin-bottom: 15px; }
+        .tab { padding: 10px 20px; background: #e9ecef; border: 2px solid #004080; border-bottom: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600; font-size: 12px; color: #004080; }
+        .tab.active { background: #004080; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .progress-bar { width: 100%; height: 20px; background: #e9ecef; border-radius: 10px; overflow: hidden; margin: 10px 0; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #004080, #0056b3); transition: width 0.3s; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: 600; }
+        
+        /* Hidden render area for PDF generation */
+        #renderArea { position: absolute; left: -9999px; top: 0; }
+        
+        @media (max-width: 1200px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .preview-section { position: static; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="page-header">
+            <div class="logo-row">
+                <div class="logo-box">ICF</div>
+            </div>
+            <h3>Informatics Consultancy Firm-Sierra Leone (ICF-SL)</h3>
+            <p class="tagline"><em>Driving Data-Driven Solutions for Health and Development</em></p>
+            <h1>VOUCHER DESIGNER</h1>
+            <p class="subtitle">Create Beautiful Vouchers with Embedded QR Codes • Batch Generate from Excel</p>
+        </div>
+
+        <div class="content-card">
+            <div class="content-inner">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('single')">Single Voucher</div>
+                    <div class="tab" onclick="switchTab('batch')">Batch from Excel</div>
+                </div>
+                
+                <div class="main-layout">
+                    <!-- Left Panel - Controls -->
+                    <div class="controls-panel">
+                        <!-- Single Voucher Tab -->
+                        <div id="singleTab" class="tab-content active">
+                            <div class="section-header">
+                                <span class="section-icon">1</span>
+                                <span class="section-title">VOUCHER DETAILS</span>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Company Logo</label>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <div id="logoPreviewBox" style="width: 50px; height: 50px; border: 2px dashed #004080; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f8f9fa; flex-shrink: 0;">
+                                        <span id="logoPlaceholder" style="font-size: 20px;">📷</span>
+                                        <img id="logoPreviewImg" src="" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <input type="file" id="logoUpload" accept="image/*" onchange="handleLogoUpload(event)" style="display: none;">
+                                        <button class="btn-secondary" onclick="document.getElementById('logoUpload').click()" style="width: 100%; padding: 6px 10px; font-size: 10px;">
+                                            📤 Upload Logo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Company Name</label>
+                                    <input type="text" class="form-input" id="companyName" oninput="updatePreview()">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Voucher Code</label>
+                                    <input type="text" class="form-input" id="voucherCode" oninput="updatePreview()">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Voucher Title</label>
+                                <input type="text" class="form-input" id="voucherTitle" oninput="updatePreview()">
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Name/Text</label>
+                                    <input type="text" class="form-input" id="voucherValue" oninput="updatePreview()">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Valid Until</label>
+                                    <input type="text" class="form-input" id="validUntil" oninput="updatePreview()">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Description</label>
+                                    <input type="text" class="form-input" id="voucherDesc" oninput="updatePreview()">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Terms</label>
+                                    <input type="text" class="form-input" id="terms" oninput="updatePreview()">
+                                </div>
+                            </div>
+                            
+                            <div class="section-header" style="margin-top: 15px;">
+                                <span class="section-icon">2</span>
+                                <span class="section-title">QR CODE</span>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">QR Code Data (URL or Text)</label>
+                                <input type="text" class="form-input" id="qrContent" oninput="updatePreview()">
+                            </div>
+                        </div>
+                        
+                        <!-- Batch Tab -->
+                        <div id="batchTab" class="tab-content">
+                            <div class="section-header">
+                                <span class="section-icon">1</span>
+                                <span class="section-title">UPLOAD LOGO</span>
+                            </div>
+                            
+                            <div class="form-group">
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <div id="batchLogoPreviewBox" style="width: 50px; height: 50px; border: 2px dashed #004080; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f8f9fa; flex-shrink: 0;">
+                                        <span id="batchLogoPlaceholder" style="font-size: 20px;">📷</span>
+                                        <img id="batchLogoPreviewImg" src="" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <input type="file" id="batchLogoUpload" accept="image/*" onchange="handleBatchLogoUpload(event)" style="display: none;">
+                                        <button class="btn-secondary" onclick="document.getElementById('batchLogoUpload').click()" style="width: 100%; padding: 6px 10px; font-size: 10px;">
+                                            📤 Upload Logo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="section-header" style="margin-top: 15px;">
+                                <span class="section-icon">2</span>
+                                <span class="section-title">UPLOAD EXCEL DATA</span>
+                            </div>
+                            
+                            <div class="upload-zone" id="excelDropZone" onclick="document.getElementById('excelUpload').click()">
+                                <div class="upload-zone-icon">📊</div>
+                                <div class="upload-zone-text">
+                                    <strong>Click to upload</strong> or drag & drop<br>
+                                    Excel file (.xlsx, .xls)
+                                </div>
+                                <input type="file" id="excelUpload" accept=".xlsx,.xls" onchange="handleExcelUpload(event)" style="display: none;">
+                            </div>
+                            
+                            <div class="form-group">
+                                <button class="btn-secondary" onclick="downloadTemplate()" style="width: 100%;">
+                                    📥 Download Excel Template
+                                </button>
+                            </div>
+                            
+                            <div id="dataPreviewContainer" style="display: none;">
+                                <div class="data-count" id="dataCount"></div>
+                                <div class="data-preview" id="dataPreview"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Common Style Settings -->
+                        <div class="section-header" style="margin-top: 15px;">
+                            <span class="section-icon">3</span>
+                            <span class="section-title">STYLE</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Template</label>
+                            <div class="template-selector">
+                                <button class="template-btn active" onclick="setTemplate('classic', event)">Classic</button>
+                                <button class="template-btn" onclick="setTemplate('modern', event)">Modern</button>
+                                <button class="template-btn" onclick="setTemplate('elegant', event)">Elegant</button>
+                                <button class="template-btn" onclick="setTemplate('festive', event)">Festive</button>
+                                <button class="template-btn" onclick="setTemplate('minimal', event)">Minimal</button>
+                            </div>
+                            <div class="template-selector" style="margin-top: 6px;">
+                                <button class="template-btn" onclick="setTemplate('luxury', event)">Luxury</button>
+                                <button class="template-btn" onclick="setTemplate('gradient', event)">Gradient</button>
+                                <button class="template-btn" onclick="setTemplate('retro', event)">Retro</button>
+                                <button class="template-btn" onclick="setTemplate('corporate', event)">Corporate</button>
+                                <button class="template-btn" onclick="setTemplate('neon', event)">Neon</button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Colors</label>
+                            <div class="color-row">
+                                <input type="color" class="color-picker" id="primaryColor" value="#004080" onchange="updatePreview()">
+                                <span style="font-size: 11px;">Primary</span>
+                                <input type="color" class="color-picker" id="secondaryColor" value="#ffc107" onchange="updatePreview()">
+                                <span style="font-size: 11px;">Secondary</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Panel - Preview -->
+                    <div class="preview-panel">
+                        <div class="preview-section">
+                            <div class="preview-title">📄 Live Preview</div>
+                            
+                            <div class="voucher-wrapper">
+                                <div class="voucher template-classic" id="voucherPreview" style="--primary-color: #004080; --secondary-color: #ffc107;">
+                                </div>
+                            </div>
+                            
+                            <div id="singleDownloadButtons" class="download-buttons">
+                                <button class="btn-gold" onclick="downloadVoucher('png')">📥 Download PNG</button>
+                                <button class="btn-secondary" onclick="downloadVoucher('jpeg')">📥 Download JPEG</button>
+                            </div>
+                            
+                            <div id="batchDownloadButtons" class="download-buttons" style="display: none;">
+                                <button class="btn-success" onclick="generatePDF()">📄 Generate PDF (A4)</button>
+                            </div>
+                            
+                            <div id="progressContainer" style="display: none; margin-top: 15px;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progressFill" style="width: 0%;">0%</div>
+                                </div>
+                                <div style="text-align: center; font-size: 11px; color: #666;" id="progressText">Generating vouchers...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <p style="margin: 0; font-weight: 700;">Informatics Consultancy Firm-Sierra Leone (ICF-SL)</p>
+            <p>Driving Data-Driven Solutions for Health and Development</p>
+            <p style="font-size: 10px;">© 2025 Informatics Consultancy Firm-Sierra Leone (ICF-SL)</p>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+    <div id="renderArea"></div>
+
+    <script>
+        let currentTemplate = 'classic';
+        let uploadedLogo = null;
+        let batchLogo = null;
+        let excelData = [];
+        let currentTab = 'single';
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'single') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('singleTab').classList.add('active');
+                document.getElementById('singleDownloadButtons').style.display = 'flex';
+                document.getElementById('batchDownloadButtons').style.display = 'none';
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('batchTab').classList.add('active');
+                document.getElementById('singleDownloadButtons').style.display = 'none';
+                document.getElementById('batchDownloadButtons').style.display = excelData.length > 0 ? 'flex' : 'none';
+            }
+            updatePreview();
+        }
+
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                uploadedLogo = e.target.result;
+                document.getElementById('logoPlaceholder').style.display = 'none';
+                const previewImg = document.getElementById('logoPreviewImg');
+                previewImg.src = uploadedLogo;
+                previewImg.style.display = 'block';
+                document.getElementById('logoPreviewBox').style.borderStyle = 'solid';
+                updatePreview();
+                showNotification('Logo uploaded!', 'success');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleBatchLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                batchLogo = e.target.result;
+                document.getElementById('batchLogoPlaceholder').style.display = 'none';
+                const previewImg = document.getElementById('batchLogoPreviewImg');
+                previewImg.src = batchLogo;
+                previewImg.style.display = 'block';
+                document.getElementById('batchLogoPreviewBox').style.borderStyle = 'solid';
+                updatePreview();
+                showNotification('Logo uploaded!', 'success');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleExcelUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    if (jsonData.length === 0) {
+                        showNotification('Excel file is empty', 'error');
+                        return;
+                    }
+                    
+                    excelData = jsonData;
+                    displayDataPreview();
+                    document.getElementById('batchDownloadButtons').style.display = 'flex';
+                    
+                    // Update preview with first row
+                    if (excelData.length > 0) {
+                        updatePreviewFromData(excelData[0]);
+                    }
+                    
+                    showNotification(`Loaded ${excelData.length} records!`, 'success');
+                } catch (error) {
+                    showNotification('Error reading Excel file', 'error');
+                    console.error(error);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function displayDataPreview() {
+            const container = document.getElementById('dataPreviewContainer');
+            const preview = document.getElementById('dataPreview');
+            const count = document.getElementById('dataCount');
+            
+            container.style.display = 'block';
+            count.innerHTML = `📊 <strong>${excelData.length}</strong> vouchers to generate (${Math.ceil(excelData.length / 10)} pages)`;
+            
+            const headers = Object.keys(excelData[0]);
+            let html = '<table><thead><tr>';
+            headers.forEach(h => html += `<th>${h}</th>`);
+            html += '</tr></thead><tbody>';
+            
+            excelData.slice(0, 10).forEach(row => {
+                html += '<tr>';
+                headers.forEach(h => html += `<td>${row[h] || ''}</td>`);
+                html += '</tr>';
+            });
+            
+            if (excelData.length > 10) {
+                html += `<tr><td colspan="${headers.length}" style="text-align: center; color: #999;">... and ${excelData.length - 10} more</td></tr>`;
+            }
+            
+            html += '</tbody></table>';
+            preview.innerHTML = html;
+        }
+
+        function downloadTemplate() {
+            const template = [
+                { company_name: 'Company A', voucher_code: 'CODE001', voucher_title: 'Gift Voucher', name_text: 'John Doe', valid_until: 'Dec 31, 2025', description: 'Valid for all services', terms: 'Non-transferable', qr_content: 'https://example.com/v1' },
+                { company_name: 'Company A', voucher_code: 'CODE002', voucher_title: 'Gift Voucher', name_text: 'Jane Smith', valid_until: 'Dec 31, 2025', description: 'Valid for all services', terms: 'Non-transferable', qr_content: 'https://example.com/v2' }
+            ];
+            
+            const ws = XLSX.utils.json_to_sheet(template);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Vouchers');
+            XLSX.writeFile(wb, 'voucher_template.xlsx');
+            showNotification('Template downloaded!', 'success');
+        }
+
+        function getLogoSrc() {
+            if (currentTab === 'batch') {
+                return batchLogo || '';
+            }
+            return uploadedLogo || '';
+        }
+
+        function setTemplate(template, evt) {
+            currentTemplate = template;
+            document.querySelectorAll('.template-btn').forEach(btn => btn.classList.remove('active'));
+            if (evt && evt.target) evt.target.classList.add('active');
+            updatePreview();
+        }
+
+        function updatePreviewFromData(data) {
+            document.getElementById('companyName').value = data.company_name || '';
+            document.getElementById('voucherCode').value = data.voucher_code || '';
+            document.getElementById('voucherTitle').value = data.voucher_title || '';
+            document.getElementById('voucherValue').value = data.name_text || '';
+            document.getElementById('validUntil').value = data.valid_until || '';
+            document.getElementById('voucherDesc').value = data.description || '';
+            document.getElementById('terms').value = data.terms || '';
+            document.getElementById('qrContent').value = data.qr_content || '';
+            updatePreview();
+        }
+
+        function updatePreview() {
+            const voucher = document.getElementById('voucherPreview');
+            const primaryColor = document.getElementById('primaryColor').value;
+            const secondaryColor = document.getElementById('secondaryColor').value;
+            
+            voucher.style.setProperty('--primary-color', primaryColor);
+            voucher.style.setProperty('--secondary-color', secondaryColor);
+            voucher.className = `voucher template-${currentTemplate}`;
+            
+            const companyName = document.getElementById('companyName').value;
+            const voucherTitle = document.getElementById('voucherTitle').value;
+            const voucherValue = document.getElementById('voucherValue').value;
+            const voucherCode = document.getElementById('voucherCode').value;
+            const voucherDesc = document.getElementById('voucherDesc').value;
+            const validUntil = document.getElementById('validUntil').value;
+            const terms = document.getElementById('terms').value;
+            const qrContent = document.getElementById('qrContent').value;
+            
+            renderVoucher(voucher, {
+                companyName, voucherTitle, voucherValue, voucherCode,
+                voucherDesc, validUntil, terms, qrContent
+            }, getLogoSrc(), primaryColor);
+        }
+
+        function renderVoucher(container, data, logoSrc, primaryColor) {
+            const logoHtml = logoSrc ? `<div class="voucher-logo"><img src="${logoSrc}" alt="Logo"></div>` : '';
+            
+            let html = '';
+            if (currentTemplate === 'corporate') {
+                html = `
+                    <div class="voucher-header-bar">
+                        ${logoHtml}
+                        <div class="voucher-company">${data.companyName}</div>
+                    </div>
+                    <div class="voucher-main">
+                        <div class="voucher-title">${data.voucherTitle}</div>
+                        <div class="voucher-value">${data.voucherValue}</div>
+                        <div class="voucher-description">${data.voucherDesc}</div>
+                        <div class="voucher-footer">
+                            <span>${data.validUntil}</span>
+                            <span>${data.terms}</span>
+                        </div>
+                    </div>
+                    <div class="voucher-qr-section">
+                        <div class="qr-box"><div class="qr-code-container"></div></div>
+                        <div class="qr-label">Scan QR Code</div>
+                        <div class="voucher-code">${data.voucherCode}</div>
+                    </div>
+                `;
+            } else {
+                html = `
+                    <div class="voucher-main">
+                        ${logoHtml}
+                        <div class="voucher-company">${data.companyName}</div>
+                        <div class="voucher-title">${data.voucherTitle}</div>
+                        <div class="voucher-value">${data.voucherValue}</div>
+                        <div class="voucher-description">${data.voucherDesc}</div>
+                        <div class="voucher-footer">
+                            <span>${data.validUntil}</span>
+                            <span>${data.terms}</span>
+                        </div>
+                    </div>
+                    <div class="voucher-qr-section">
+                        <div class="qr-box"><div class="qr-code-container"></div></div>
+                        <div class="qr-label">Scan QR Code</div>
+                        <div class="voucher-code">${data.voucherCode}</div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+            
+            const qrContainer = container.querySelector('.qr-code-container');
+            if (qrContainer && data.qrContent) {
+                new QRCode(qrContainer, {
+                    text: data.qrContent,
+                    width: 55,
+                    height: 55,
+                    colorDark: primaryColor,
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            }
+        }
+
+        async function downloadVoucher(format) {
+            const voucher = document.getElementById('voucherPreview');
+            
+            try {
+                showNotification('Generating image...', 'success');
+                
+                const canvas = await html2canvas(voucher, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: format === 'jpeg' ? '#ffffff' : null
+                });
+                
+                const link = document.createElement('a');
+                link.download = `voucher_${Date.now()}.${format}`;
+                link.href = canvas.toDataURL(`image/${format}`, 0.95);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showNotification(`Downloaded as ${format.toUpperCase()}!`, 'success');
+            } catch (error) {
+                showNotification('Error generating image.', 'error');
+                console.error(error);
+            }
+        }
+
+        async function generatePDF() {
+            if (excelData.length === 0) {
+                showNotification('No data loaded. Please upload Excel file.', 'error');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 10;
+            const voucherWidth = (pageWidth - margin * 3) / 2; // 2 columns
+            const voucherHeight = (pageHeight - margin * 6) / 5; // 5 rows
+            
+            const renderArea = document.getElementById('renderArea');
+            const primaryColor = document.getElementById('primaryColor').value;
+            const secondaryColor = document.getElementById('secondaryColor').value;
+            const logoSrc = batchLogo || '';
+            
+            document.getElementById('progressContainer').style.display = 'block';
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            let voucherIndex = 0;
+            
+            for (let i = 0; i < excelData.length; i++) {
+                const row = excelData[i];
+                const data = {
+                    companyName: row.company_name || '',
+                    voucherCode: row.voucher_code || '',
+                    voucherTitle: row.voucher_title || '',
+                    voucherValue: row.name_text || '',
+                    validUntil: row.valid_until || '',
+                    voucherDesc: row.description || '',
+                    terms: row.terms || '',
+                    qrContent: row.qr_content || ''
+                };
+                
+                // Create voucher element
+                const voucherEl = document.createElement('div');
+                voucherEl.className = `voucher template-${currentTemplate}`;
+                voucherEl.style.cssText = `--primary-color: ${primaryColor}; --secondary-color: ${secondaryColor};`;
+                renderArea.appendChild(voucherEl);
+                
+                renderVoucher(voucherEl, data, logoSrc, primaryColor);
+                
+                // Wait for QR code to render
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Capture to canvas
+                const canvas = await html2canvas(voucherEl, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff'
+                });
+                
+                // Calculate position (2 columns x 5 rows)
+                const col = voucherIndex % 2;
+                const rowNum = Math.floor(voucherIndex / 2) % 5;
+                const pageNum = Math.floor(voucherIndex / 10);
+                
+                if (voucherIndex > 0 && voucherIndex % 10 === 0) {
+                    pdf.addPage();
+                }
+                
+                const x = margin + col * (voucherWidth + margin);
+                const y = margin + rowNum * (voucherHeight + margin);
+                
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                pdf.addImage(imgData, 'JPEG', x, y, voucherWidth, voucherHeight);
+                
+                renderArea.removeChild(voucherEl);
+                voucherIndex++;
+                
+                // Update progress
+                const progress = Math.round((i + 1) / excelData.length * 100);
+                progressFill.style.width = progress + '%';
+                progressFill.textContent = progress + '%';
+                progressText.textContent = `Generating voucher ${i + 1} of ${excelData.length}...`;
+            }
+            
+            progressText.textContent = 'Saving PDF...';
+            pdf.save(`vouchers_${Date.now()}.pdf`);
+            
+            document.getElementById('progressContainer').style.display = 'none';
+            showNotification(`PDF generated with ${excelData.length} vouchers!`, 'success');
+        }
+
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            setTimeout(() => { notification.className = 'notification'; }, 3000);
+        }
+
+        // Drag and drop for Excel
+        const dropZone = document.getElementById('excelDropZone');
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+                document.getElementById('excelUpload').files = e.dataTransfer.files;
+                handleExcelUpload({ target: { files: [file] } });
+            } else {
+                showNotification('Please upload an Excel file (.xlsx, .xls)', 'error');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', updatePreview);
+    </script>
+</body>
+</html>
